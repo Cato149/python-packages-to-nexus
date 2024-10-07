@@ -16,6 +16,7 @@ def get_packages_names(path: str, logger: Logger) -> list:
             continue
 
         packages.append(file_name)
+        return packages
 
 
 def download_packages(logger: Logger):
@@ -27,12 +28,14 @@ def download_packages(logger: Logger):
     packages = get_packages_names(packages_dir, logger)
 
     if not packages:
-        return None
+        logger.info("Нет пакетов для загрузки")
+        return
 
     for package in packages:
         try:
+            logger.info(f"Загрузка {package}")
             package_path = os.path.join(packages_dir, package)
-            subprocess.run(
+            result = subprocess.run(
                 [
                     "twine",
                     "upload",
@@ -45,7 +48,19 @@ def download_packages(logger: Logger):
                     package_path,
                 ],
                 check=True,
+                text=True,
             )
+
+            if result.returncode == 0:
+                logger.info("Успех!")
+                logger.info("Вывод:", result.stdout)
+            else:
+                logger.error(f"Неудачная попытка с выходным кодом {result.returncode}")
+                logger.error("Вывод ошибки:", result.stderr)
+                continue
+
         except Exception as e:
             logger.error(str(e))
             continue
+
+    logger.info("Загрузка завершена")
